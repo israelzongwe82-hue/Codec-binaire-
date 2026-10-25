@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Codec Binaire ↔ Alphabet</title>
+<style>
+:root{--bg:#0f1115;--card:#1a1d24;--accent:#6c5ce7;--accent2:#00cec9;--text:#f5f6fa;--muted:#a4b0be;--border:#2d3436}
+*{box-sizing:border-box;font-family: 'Segoe UI',system-ui,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+header{padding:20px 16px 10px;text-align:center}
+h1{margin:0;font-size:1.4rem;letter-spacing:0.5px}
+h1 span{color:var(--accent2)}
+.subtitle{color:var(--muted);font-size:0.85rem;margin-top:6px}
+.container{padding:12px 14px;max-width:600px;width:100%;margin:0 auto;flex:1}
+.tabs{display:flex;background:var(--card);border-radius:14px;padding:4px;gap:4px;border:1px solid var(--border);margin:16px 0}
+.tab{flex:1;padding:12px;border-radius:10px;border:0;background:transparent;color:var(--muted);font-weight:600;cursor:pointer;transition:.2s}
+.tab.active{background:var(--accent);color:white;box-shadow:0 4px 15px rgba(108,92,231,.4)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:14px}
+.card-title{font-size:0.9rem;font-weight:700;margin-bottom:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+textarea,input,select{width:100%;background:#12141a;border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:15px;outline:none;transition:.2s}
+textarea{resize:vertical;min-height:110px;line-height:1.5}
+textarea:focus,input:focus,select:focus{border-color:var(--accent)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{width:100%;padding:14px;border-radius:12px;border:0;font-weight:800;font-size:1rem;cursor:pointer;transition:.2s}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;box-shadow:0 6px 20px rgba(108,92,231,.3)}
+.btn-primary:active{transform:scale(.97)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);margin-top:8px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.chip{padding:6px 10px;background:#12141a;border:1px solid var(--border);border-radius:20px;font-size:.78rem;color:var(--muted);cursor:pointer}
+.chip.active{background:var(--accent);color:white;border-color:var(--accent)}
+.small{font-size:.8rem;color:var(--muted);margin-top:8px;line-height:1.4}
+.footer{text-align:center;padding:18px;color:var(--muted);font-size:.75rem;opacity:.7}
+.badge{display:inline-block;padding:3px 8px;background:#00cec920;border:1px solid #00cec950;color:var(--accent2);border-radius:6px;font-size:.7rem;margin-left:6px}
+</style>
+</head>
+<body>
+<header>
+<h1>CODEC<span>BINAIRE</span></h1>
+<div class="subtitle">Binaire ↔ Alphabet • 100% hors-ligne • APK ready</div>
+</header>
+
+<div class="container">
+<div class="tabs">
+<button class="tab active" id="tabBin2Alpha" onclick="switchTab('bin2alpha')">Binaire → Alphabet</button>
+<button class="tab" id="tabAlpha2Bin" onclick="switchTab('alpha2bin')">Alphabet → Binaire</button>
+</div>
+
+<div class="card">
+<div class="card-title">Mode de conversion <span class="badge" id="modeLabel">ASCII 8-bits</span></div>
+<select id="mode" onchange="onModeChange()">
+<option value="ascii8">Standard ASCII (8 bits par lettre)</option>
+<option value="ascii7">ASCII 7 bits</option>
+<option value="custom">Alphabet personnalisé (tu peux changer)</option>
+</select>
+<div id="customBox" style="display:none;margin-top:12px">
+<input id="customAlphabet" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ" placeholder="Ton alphabet: ex: ABCDEFG... ou ABCD1234 @#">
+<div class="small">L'ordre compte. Binaire 0 = 1er caractère. Ex: si alphabet = ABCD, alors 00=A, 01=B, 10=C, 11=D. Le nombre de bits sera auto-calculé.</div>
+<div style="margin-top:8px" class="row">
+<div><label class="small">Bits par caractère</label><select id="customBits"><option value="auto">Auto</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="8">8</option></select></div>
+<div><label class="small">Index départ</label><select id="startIndex"><option value="0">0</option><option value="1">1</option></select></div>
+</div>
+</div>
+<div class="row" style="margin-top:12px">
+<div><label class="small">Séparateur entrée binaire</label><select id="separator"><option value="auto">Auto (espace ou rien)</option><option value="space">Espace</option><option value="none">Aucun (continu)</option><option value="comma">Virgule</option></select></div>
+<div><label class="small">Sortie en</label><select id="outputCase"><option value="keep">Garder tel quel</option><option value="upper">MAJUSCULE</option><option value="lower">minuscule</option></select></div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title" id="inputLabel">Entrée Binaire</div>
+<textarea id="input" placeholder="Ex: 01000001 01000010 01000011 → ABC"></textarea>
+<div class="controls">
+<span class="chip" onclick="insertSample()">Exemple</span>
+<span class="chip" onclick="clearAll()">Effacer</span>
+<span class="chip" onclick="pasteClipboard()">Coller</span>
+</div>
+<button class="btn btn-primary" onclick="convert()" id="convertBtn">CONVERTIR →</button>
+<button class="btn btn-ghost" onclick="swap()">↔ Inverser le sens</button>
+</div>
+
+<div class="card">
+<div class="card-title">Résultat</div>
+<textarea id="output" placeholder="Résultat ici..." readonly></textarea>
+<div class="controls">
+<span class="chip" onclick="copyOutput()">Copier résultat</span>
+<span class="chip" onclick="shareOutput()">Partager</span>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">Options rapides</div>
+<div class="small">• Mode ASCII: compatible avec tous les textes, emojis limités.<br>• Mode Custom: tu peux créer ton propre codec secret. Ex: alphabet = ZYX... pour inverser, ou alphabet = 01 pour du binaire pur personnalisé.<br>• Ce fichier n'a besoin d'aucun internet. Tu peux le mettre dans WebView Android pour faire ton APK sur Github.</div>
+</div>
+</div>
+
+<div class="footer">© créé par KIBWE ZONGWE Israël</div>
+
+<script>
+let currentTab = 'bin2alpha';
+const $ = id => document.getElementById(id);
+
+function switchTab(tab){
+ currentTab = tab;
+ $('tabBin2Alpha').classList.toggle('active', tab==='bin2alpha');
+ $('tabAlpha2Bin').classList.toggle('active', tab==='alpha2bin');
+ if(tab==='bin2alpha'){
+  $('inputLabel').innerText='Entrée Binaire';
+  $('input').placeholder='Ex: 01000001 01000010 → AB';
+  $('convertBtn').innerText='CONVERTIR →';
+ }else{
+  $('inputLabel').innerText='Entrée Alphabet / Texte';
+  $('input').placeholder='Ex: Bonjour Kolwezi';
+  $('convertBtn').innerText='→ CONVERTIR';
+ }
+ onModeChange();
+}
+
+function onModeChange(){
+ const mode = $('mode').value;
+ $('customBox').style.display = mode==='custom'?'block':'none';
+ $('modeLabel').innerText = mode==='custom' ? 'CUSTOM' : (mode==='ascii7' ? 'ASCII 7-bits' : 'ASCII 8-bits');
+}
+
+function getBitsNeeded(alphabetLength){
+ return Math.ceil(Math.log2(alphabetLength));
+}
+
+function convert(){
+ const inputVal = $('input').value.trim();
+ if(!inputVal){$('output').value='';return;}
+ const mode = $('mode').value;
+ const sep = $('separator').value;
+ const outCase = $('outputCase').value;
+ try{
+  let result='';
+  if(currentTab==='bin2alpha'){
+   if(mode==='custom'){
+    const alpha = $('customAlphabet').value;
+    if(!alpha) throw new Error('Alphabet vide');
+    let bitsOpt = $('customBits').value;
+    let bits = bitsOpt==='auto'? getBitsNeeded(alpha.length) : parseInt(bitsOpt);
+    let start = parseInt($('startIndex').value);
+    // nettoyer binaire
+    let clean = inputVal.replace(/[^01]/g,'');
+    if(sep==='space' || sep==='comma'){
+      // si séparateur défini, on split avant
+      let parts = inputVal.split(sep==='comma' ? ',' : /[\s\n]+/).map(s=>s.replace(/[^01]/g,'')).filter(Boolean);
+      if(parts.length>0){
+        result = parts.map(bin=>{
+          let idx = parseInt(bin,2)-start;
+          return (idx>=0 && idx<alpha.length)? alpha[idx] : '?';
+        }).join('');
+      }else{
+        throw new Error('Format binaire invalide');
+      }
+    }else{
+      // continu
+      for(let i=0;i+bits<=clean.length;i+=bits){
+        let chunk = clean.substr(i,bits);
+        let idx = parseInt(chunk,2)-start;
+        result += (idx>=0 && idx<alpha.length)? alpha[idx] : '?';
+      }
+    }
+   }else{
+    // ascii
+    const bitLen = mode==='ascii7'?7:8;
+    let clean = inputVal;
+    // détecter séparateur auto
+    let parts;
+    if(sep==='none') parts=null;
+    else if(sep==='comma') parts = clean.split(',').map(s=>s.replace(/[^01]/g,'')).filter(Boolean);
+    else if(sep==='space') parts = clean.trim().split(/\s+/);
+    else { // auto
+      if(clean.includes(' ') || clean.includes('\n') || clean.includes(',')) parts = clean.split(/[\s,]+/);
+      else parts=null;
+    }
+    if(parts && parts.length>1){
+      result = parts.map(bin=>{
+        let c = bin.replace(/[^01]/g,'');
+        if(!c) return '';
+        return String.fromCharCode(parseInt(c,2));
+      }).join('');
+    }else{
+      let only01 = clean.replace(/[^01]/g,'');
+      for(let i=0;i+bitLen<=only01.length;i+=bitLen){
+        result += String.fromCharCode(parseInt(only01.substr(i,bitLen),2));
+      }
+    }
+   }
+  }else{ // alpha to bin
+   if(mode==='custom'){
+    const alpha = $('customAlphabet').value;
+    let bitsOpt = $('customBits').value;
+    let bits = bitsOpt==='auto'? getBitsNeeded(alpha.length) : parseInt(bitsOpt);
+    let start = parseInt($('startIndex').value);
+    let sepChar = sep==='comma'?',': (sep==='space'?' ':'');
+    let arr=[];
+    for(let ch of inputVal){
+      if(ch==='\n'){arr.push('\n');continue;}
+      let idx = alpha.indexOf(ch);
+      if(idx===-1){
+        // si casse différente, essayer
+        let idxUp = alpha.indexOf(ch.toUpperCase());
+        let idxLow = alpha.indexOf(ch.toLowerCase());
+        idx = idxUp!==-1?idxUp:idxLow;
+      }
+      if(idx===-1) continue;
+      let bin = (idx+start).toString(2).padStart(bits,'0');
+      arr.push(bin);
+    }
+    result = arr.join(sepChar);
+   }else{
+    const bitLen = mode==='ascii7'?7:8;
+    let sepChar = sep==='comma'? ', ' : (sep==='none' ? '' : ' ');
+    let bins=[];
+    for(let i=0;i<inputVal.length;i++){
+      let code = inputVal.charCodeAt(i);
+      bins.push(code.toString(2).padStart(bitLen,'0'));
+    }
+    result = bins.join(sepChar);
+   }
+  }
+  if(outCase==='upper') result=result.toUpperCase();
+  if(outCase==='lower') result=result.toLowerCase();
+  $('output').value=result;
+ }catch(e){
+  $('output').value='Erreur: '+e.message;
+ }
+}
+
+function insertSample(){
+ if(currentTab==='bin2alpha'){
+  $('mode').value='ascii8';
+  onModeChange();
+  $('input').value='01001000 01100101 01101100 01101100 01101111 00100000 01001011 01101111 01101100 01110111 01100101 01111010 01101001';
+ }else{
+  $('input').value='Hello Kolwezi';
+ }
+ convert();
+}
+function clearAll(){ $('input').value=''; $('output').value=''; }
+async function pasteClipboard(){
+ try{ const t = await navigator.clipboard.readText(); $('input').value=t; convert(); }catch{ alert('Collage non permis, colle manuellement'); }
+}
+async function copyOutput(){
+ try{ await navigator.clipboard.writeText($('output').value); alert('Copié!'); }catch{ $('output').select(); document.execCommand('copy'); }
+}
+function swap(){
+ switchTab(currentTab==='bin2alpha'?'alpha2bin':'bin2alpha');
+ let tmp = $('input').value;
+ $('input').value = $('output').value;
+ $('output').value = tmp;
+}
+function shareOutput(){
+ if(navigator.share){ navigator.share({title:'Codec Binaire', text:$('output').value}); }
+ else{ copyOutput(); }
+}
+// auto convert on typing
+$('input').addEventListener('input', convert);
+$('customAlphabet').addEventListener('input', convert);
+$('customBits').addEventListener('change', convert);
+$('startIndex').addEventListener('change', convert);
+$('separator').addEventListener('change', convert);
+$('outputCase').addEventListener('change', convert);
+</script>
+</body>
+</html>
